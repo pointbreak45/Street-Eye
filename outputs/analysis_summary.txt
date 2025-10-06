@@ -1,0 +1,29 @@
+
+=== VEHICLE DETECTION ANALYSIS SUMMARY ===
+Generated on: 2025-10-01 12:50:11
+
+📊 OVERALL STATISTICS:
+• Analysis Duration: 0.3 minutes
+• Total Vehicles Detected: 51
+• Average Traffic Rate: 153.0 vehicles/minute
+
+🚗 VEHICLE BREAKDOWN:
+• Cars: 45 (88.2%)
+• Bikes: 0 (0.0%)
+• Buses: 0 (0.0%)
+• Trucks: 6 (11.8%)
+• Others: 0 (0.0%)
+
+⚡ TRAFFIC INSIGHTS:
+• Peak Activity: 12 vehicles detected at 0 seconds
+• Most Common Vehicle: car
+• Traffic Density: High
+
+💡 ANALYSIS NOTES:
+• Unique vehicle tracking (no crossing line required)
+• YOLOv11 model used for object detection
+• Each vehicle counted only once when first detected
+• Data exported for further analysis
+
+=== END OF SUMMARY ===
+        

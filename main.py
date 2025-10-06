@@ -36,22 +36,24 @@ class VehicleDetectionSystem:
         
         Args:
             model_path (str): Path to YOLOv11 model weights
-            line_position (int): Y-coordinate for counting line
-            use_tracking (bool): Whether to use object tracking (requires lap package)
+            line_position (int): Y-coordinate reference (not used for counting)
+            use_tracking (bool): Whether to use object tracking for unique IDs
         """
         self.model = YOLO(model_path)
         self.class_list = self.model.names
-        self.line_y_red = line_position
+        self.line_y_red = line_position  # Kept for compatibility but not used for counting
         self.use_tracking = use_tracking
         
         # Test if tracking is available
         if self.use_tracking:
             try:
                 import lap
-                print("✅ Object tracking enabled (lap package available)")
+                print("✅ Object tracking enabled with unique IDs")
             except ImportError:
                 print("⚠️  lap package not available, using detection-only mode")
                 self.use_tracking = False
+        else:
+            print("✅ Detection-only mode enabled")
         
         # Vehicle category mapping
         self.vehicle_categories = {
@@ -63,7 +65,7 @@ class VehicleDetectionSystem:
         }
         
         # Initialize tracking variables
-        self.crossed_ids = set()
+        self.tracked_vehicles = set()  # Track unique vehicle IDs that have been counted
         self.time_series_data = []
         self.start_time = None
         self.detection_counter = 0  # For detection-only mode
@@ -97,39 +99,30 @@ class VehicleDetectionSystem:
         }
         return class_mapping.get(class_name.lower(), 'others')
     
-    def _get_video_fourcc(self, codec='mp4v'):
+    def _get_video_fourcc(self, codec='avc1'):
         """
-        Get video fourcc code with compatibility across OpenCV versions
+        Get video fourcc code with web browser compatibility
         
         Args:
-            codec (str): Video codec string (default: 'mp4v')
+            codec (str): Video codec string (default: 'avc1' for H.264)
             
         Returns:
             int: fourcc code for video writer
         """
-        # Try different methods in order of preference
-        methods = [
-            # Method 1: Check if VideoWriter_fourcc exists as attribute
-            ('VideoWriter_fourcc', lambda: getattr(cv2, 'VideoWriter_fourcc')(*codec)),
-            # Method 2: Check if VideoWriter.fourcc exists
-            ('VideoWriter.fourcc', lambda: cv2.VideoWriter.fourcc(*codec) if hasattr(cv2.VideoWriter, 'fourcc') else None),
-            # Method 3: Raw hex fallback for mp4v
-            ('hex_fallback', lambda: 0x7634706d if codec == 'mp4v' else None)
-        ]
-        
-        for method_name, method_func in methods:
-            try:
-                fourcc = method_func()
-                if fourcc is not None:
-                    if method_name != 'VideoWriter_fourcc':  # Don't log for the standard method
-                        print(f"ℹ️  Using {method_name} method for OpenCV compatibility")
-                    return fourcc
-            except (AttributeError, TypeError, Exception):
-                continue
-        
-        # Final fallback - this should always work
-        print("⚠️  Using final fallback fourcc (mp4v hex code)")
-        return 0x7634706d  # 'mp4v' as hex
+        # Use H.264 codec for better web browser compatibility
+        try:
+            # Try cv2.VideoWriter_fourcc if available
+            fourcc_func = getattr(cv2, 'VideoWriter_fourcc', None)
+            if fourcc_func:
+                return fourcc_func(*codec)
+            elif hasattr(cv2.VideoWriter, 'fourcc'):
+                return cv2.VideoWriter.fourcc(*codec)
+            else:
+                # Fallback to H.264 hex code
+                return 0x31637661  # 'avc1' as hex for H.264
+        except Exception:
+            print("⚠️  Using H.264 fallback codec for web compatibility")
+            return 0x31637661  # 'avc1' as hex
     
     def detect_and_count(self, video_path, output_folder='outputs'):
         """
@@ -161,10 +154,16 @@ class VehicleDetectionSystem:
         
         print(f"📹 Video Info: {frame_width}x{frame_height}, {fps} FPS, {video_duration:.1f}s duration")
         
-        # Setup video writer with OpenCV compatibility
+        # Setup video writer with web browser compatibility
         output_video_path = os.path.join(output_folder, 'processed_video.mp4')
-        fourcc = self._get_video_fourcc('mp4v')
+        fourcc = self._get_video_fourcc('avc1')  # Use H.264 for web compatibility
         out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+        
+        # Verify video writer initialization
+        if not out.isOpened():
+            print("⚠️  H.264 codec failed, trying alternative codec...")
+            fourcc = self._get_video_fourcc('mp4v')
+            out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
         
         # Initialize counters
         category_counts = defaultdict(int)
@@ -195,10 +194,7 @@ class VehicleDetectionSystem:
             else:
                 results = self.model(frame, classes=[1,2,3,5,6,7], verbose=False)
             
-            # Draw counting line
-            cv2.line(frame, (690, self.line_y_red), (1130, self.line_y_red), (0, 0, 255), 3)
-            cv2.putText(frame, 'Counting Line', (690, self.line_y_red - 10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+            # Note: Red line counting logic removed - now counting all detections per frame
             
             if results[0].boxes is not None and len(results[0].boxes) > 0:
                 boxes = results[0].boxes.xyxy.cpu()
@@ -220,19 +216,19 @@ class VehicleDetectionSystem:
                     class_name = self.class_list[class_idx]
                     category = self.categorize_vehicle(class_name)
                     
-                    # Draw detection
+                    # Draw detection - bounding box and label with unique ID
                     color = self._get_category_color(category)
-                    cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
+                    cv2.circle(frame, (cx, cy), 4, color, -1)
                     
-                    # Show ID and mode info
+                    # Show ID and category
                     id_text = f"ID: {track_id}" if self.use_tracking else f"DET: {track_id}"
                     cv2.putText(frame, f"{id_text} {category.upper()}", 
                                (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                     
-                    # Check line crossing
-                    if cy > self.line_y_red and track_id not in self.crossed_ids:
-                        self.crossed_ids.add(track_id)
+                    # Count unique vehicles only once (no red line needed)
+                    if track_id not in self.tracked_vehicles:
+                        self.tracked_vehicles.add(track_id)
                         category_counts[category] += 1
                         # Use proper plural form for second counts
                         plural_category = self.category_plurals.get(category, category + 's')
@@ -286,6 +282,9 @@ class VehicleDetectionSystem:
         out.release()
         cv2.destroyAllWindows()
         
+        # Post-process video for web compatibility
+        self._optimize_video_for_web(output_video_path)
+        
         print(f"✅ Video processing complete! Saved to {output_video_path}")
         
         # Create DataFrame
@@ -304,6 +303,46 @@ class VehicleDetectionSystem:
             'others': (128, 128, 128) # Gray
         }
         return colors.get(category, (0, 255, 0))
+    
+    def _optimize_video_for_web(self, video_path):
+        """
+        Optimize video for web browser compatibility using ffmpeg if available
+        
+        Args:
+            video_path (str): Path to the video file to optimize
+        """
+        try:
+            import subprocess
+            
+            # Check if ffmpeg is available
+            result = subprocess.run(['ffmpeg', '-version'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                # Create optimized version
+                temp_path = video_path.replace('.mp4', '_temp.mp4')
+                cmd = [
+                    'ffmpeg', '-i', video_path,
+                    '-c:v', 'libx264',  # H.264 codec
+                    '-preset', 'fast',   # Fast encoding
+                    '-crf', '23',        # Good quality
+                    '-movflags', '+faststart',  # Web optimization
+                    '-y',                # Overwrite output
+                    temp_path
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    # Replace original with optimized version
+                    os.replace(temp_path, video_path)
+                    print("✅ Video optimized for web browser compatibility")
+                else:
+                    print("⚠️  Video optimization failed, using original")
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+            else:
+                print("ℹ️  ffmpeg not available, skipping video optimization")
+        except Exception as e:
+            print(f"⚠️  Video optimization failed: {e}")
     
     def _draw_counts_on_frame(self, frame, category_counts):
         """
@@ -439,9 +478,9 @@ Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 • Traffic Density: {'High' if total_vehicles/duration_minutes > 30 else 'Medium' if total_vehicles/duration_minutes > 15 else 'Low'}
 
 💡 ANALYSIS NOTES:
-• Detection line positioned at Y={self.line_y_red} pixels
+• Unique vehicle tracking (no crossing line required)
 • YOLOv11 model used for object detection
-• Real-time tracking with unique ID assignment
+• Each vehicle counted only once when first detected
 • Data exported for further analysis
 
 === END OF SUMMARY ===
