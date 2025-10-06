@@ -7,7 +7,7 @@ An advanced, real-time vehicle detection and counting system using YOLOv11 and S
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red.svg)](https://streamlit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Project Preview](Output_Sample_image.png)
+![Project Preview](Outputs/)
 
 ## ✨ Key Features
 
