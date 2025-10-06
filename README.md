@@ -15,8 +15,8 @@ Here's a look at the **Street Eye** dashboard and a video of the detection in ac
 ![Street Eye Dashboard Screenshot](outputs/traffic_plot.png)
 
 **Video Demonstration:**
-[![Watch the video])](outputs/processed_video.mp4)
-*Click the image above to watch the full video demonstration.*
+[![watch by downloading])](outputs/processed_video.mp4)
+*Click the above link to watch the full video demonstration.*
 
 ## ✨ Key Features
 
