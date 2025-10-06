@@ -7,7 +7,7 @@ An advanced, real-time vehicle detection and counting system using YOLOv11 and S
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red.svg)](https://streamlit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Project Preview](Outputs/)
+![Project Preview](Outputs/processed_video.mp4)
 
 ## ✨ Key Features
 
@@ -39,7 +39,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/Street-Eye.git](https://github.com/your-username/Street-Eye.git)
+    git clone [https://github.com/pointbreak45/Street-Eye.git](https://github.com/your-username/Street-Eye.git)
     cd Street-Eye
     ```
 
