@@ -1,6 +1,5 @@
-
 === VEHICLE DETECTION ANALYSIS SUMMARY ===
-Generated on: 2025-10-01 12:50:11
+Generated on: 2025-10-08 00:41:59
 
 📊 OVERALL STATISTICS:
 • Analysis Duration: 0.3 minutes
@@ -17,13 +16,5 @@ Generated on: 2025-10-01 12:50:11
 ⚡ TRAFFIC INSIGHTS:
 • Peak Activity: 12 vehicles detected at 0 seconds
 • Most Common Vehicle: car
-• Traffic Density: High
-
-💡 ANALYSIS NOTES:
-• Unique vehicle tracking (no crossing line required)
-• YOLOv11 model used for object detection
-• Each vehicle counted only once when first detected
-• Data exported for further analysis
 
 === END OF SUMMARY ===
-        
