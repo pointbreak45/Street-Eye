@@ -11,7 +11,7 @@ An advanced, real-time vehicle detection and counting system using YOLOv11 and S
 
 Here's a look at the **Street Eye** dashboard and a video of the detection in action.
 
-**Dashboard Interface:**
+**Plot:**
 ![Street Eye Dashboard Screenshot](outputs/traffic_plot.png)
 
 **Video Demonstration:**
